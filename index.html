@@ -16,7 +16,6 @@
       --text-main: #f5f7ff;
       --text-muted: #a7b0c5;
       --danger: #ff4b5c;
-      --warning-bg: #fff2d6;
       --ok-bg: #e6f3ff;
     }
 
@@ -363,12 +362,12 @@
 
       <div class="field-block">
         <label for="fluke1">Fluke @ Sensor 1 (% RH)</label>
-        <input id="fluke1" type="number" placeholder="e.g. 50.6" step="0.1">
+        <input id="fluke1" type="number" placeholder="e.g. 58.3" step="0.1">
       </div>
 
       <div class="field-block">
         <label for="skov1">SKOV Sensor 1 display (% RH)</label>
-        <input id="skov1" type="number" placeholder="e.g. 64.1" step="0.1">
+        <input id="skov1" type="number" placeholder="e.g. 71.1" step="0.1">
       </div>
 
       <div class="field-block">
@@ -395,12 +394,12 @@
 
       <div class="field-block">
         <label for="fluke2">Fluke @ Sensor 2 (% RH)</label>
-        <input id="fluke2" type="number" placeholder="e.g. 50.6" step="0.1">
+        <input id="fluke2" type="number" placeholder="e.g. 60.0" step="0.1">
       </div>
 
       <div class="field-block">
         <label for="skov2">SKOV Sensor 2 display (% RH)</label>
-        <input id="skov2" type="number" placeholder="e.g. 64.1" step="0.1">
+        <input id="skov2" type="number" placeholder="e.g. 75.1" step="0.1">
       </div>
 
       <div class="field-block">
@@ -464,10 +463,15 @@
     input.value = next.toFixed(1);
   }
 
-  function calculateSensor(fluke, skov, offset, setpoint, diff) {
-    const idealSkov = fluke + diff;       // Fluke + targetDiff
-    const offsetNeeded = idealSkov - skov;
-    const newOffsetRaw = offset + offsetNeeded;
+  // Core per-sensor logic:
+  // idealSkov = fluke + targetDiff
+  // offsetNeeded = idealSkov - skovDisplay
+  // newOffsetRaw = currentOffset + offsetNeeded
+  // Clamp to ±10; leftover goes into setpoint via "remaining".
+  function calculateSensor(fluke, skovDisplay, currentOffset, targetDiff) {
+    const idealSkov = fluke + targetDiff;
+    const offsetNeeded = idealSkov - skovDisplay;
+    const newOffsetRaw = currentOffset + offsetNeeded;
 
     const max = 10;
     let newOffset = newOffsetRaw;
@@ -477,13 +481,18 @@
     if (newOffset < -max) { newOffset = -max; clipped = true; }
 
     const remaining = newOffsetRaw - newOffset; // leftover after hitting limit
-    const newSetpoint = clipped ? setpoint + remaining : null;
 
-    return { newOffset, clipped, remaining, newSetpoint, idealSkov, offsetNeeded, newOffsetRaw };
+    return {
+      idealSkov,
+      offsetNeeded,
+      newOffsetRaw,
+      newOffset,
+      remaining,
+      clipped
+    };
   }
 
-  // Handle one sensor UI + return result for house summary and logic
-  function handleSensor(index, flukeId, skovId, offsetId, sensorName, diff, setpoint) {
+  function handleSensor(index, flukeId, skovId, offsetId, sensorName, targetDiff) {
     const flukeStr = document.getElementById(flukeId).value.trim();
     const skovStr  = document.getElementById(skovId).value.trim();
 
@@ -491,9 +500,9 @@
     const offsetSpanId = index === 1 ? "offset1New" : "offset2New";
     const warningId    = index === 1 ? "offset1Warning" : "offset2Warning";
 
-    const resultBox = document.getElementById(resultId);
+    const resultBox  = document.getElementById(resultId);
     const offsetSpan = document.getElementById(offsetSpanId);
-    const warnEl = document.getElementById(warningId);
+    const warnEl     = document.getElementById(warningId);
 
     // If both empty: hide and skip
     if (!flukeStr && !skovStr) {
@@ -509,37 +518,35 @@
       return null;
     }
 
-    const fluke  = toNum(flukeStr, NaN);
-    const skov   = toNum(skovStr, NaN);
-    const offset = toNum(document.getElementById(offsetId).value, 0);
+    const fluke        = toNum(flukeStr, NaN);
+    const skovDisplay  = toNum(skovStr, NaN);
+    const currentOffset = toNum(document.getElementById(offsetId).value, 0);
 
-    if (isNaN(fluke) || isNaN(skov)) {
+    if (isNaN(fluke) || isNaN(skovDisplay)) {
       resultBox.style.display = "none";
       warnEl.textContent = "";
       return null;
     }
 
-    const res = calculateSensor(fluke, skov, offset, setpoint, diff);
+    const res = calculateSensor(fluke, skovDisplay, currentOffset, targetDiff);
 
     offsetSpan.textContent =
       (res.newOffset >= 0 ? "+" : "") + res.newOffset.toFixed(1) + "%";
 
     if (res.clipped) {
-      // Offset limit reached, but house setpoint suggestion will be shown globally
       warnEl.textContent =
         `Offset limit reached for ${sensorName}.\n` +
-        `Any additional adjustment will be handled in the house setpoint suggestion below.`;
+        `Any extra adjustment will be handled in the house setpoint suggestion below.`;
     } else {
       warnEl.textContent = "";
     }
 
     resultBox.style.display = "block";
 
-    // Return full info for logic breakdown
     return {
       fluke,
-      skov,
-      offset,
+      skovDisplay,
+      currentOffset,
       sensorName,
       ...res
     };
@@ -549,11 +556,12 @@
     const desired  = toNum(document.getElementById("desired").value, NaN);
     const diff     = toNum(document.getElementById("targetDiff").value, NaN);
     const setpoint = toNum(document.getElementById("setpoint").value, NaN);
-    const globalError = document.getElementById("globalError");
-    const houseSummaryBox = document.getElementById("houseSummary");
+
+    const globalError      = document.getElementById("globalError");
+    const houseSummaryBox  = document.getElementById("houseSummary");
     const houseSummaryText = document.getElementById("houseSummaryText");
-    const logicSection = document.getElementById("logicSection");
-    const logicText = document.getElementById("logicText");
+    const logicSection     = document.getElementById("logicSection");
+    const logicText        = document.getElementById("logicText");
 
     globalError.textContent = "";
     houseSummaryBox.style.display = "none";
@@ -567,26 +575,26 @@
       return;
     }
 
-    const r1 = handleSensor(1, "fluke1", "skov1", "offset1", "Sensor 1", diff, setpoint);
-    const r2 = handleSensor(2, "fluke2", "skov2", "offset2", "Sensor 2", diff, setpoint);
+    const r1 = handleSensor(1, "fluke1", "skov1", "offset1", "Sensor 1", diff);
+    const r2 = handleSensor(2, "fluke2", "skov2", "offset2", "Sensor 2", diff);
 
-    // Build combined house setpoint suggestion based on sensors that hit the offset limit
+    // House setpoint suggestion (Option B: average remaining of sensors that hit the limit)
     const remainingList = [];
-    let avgRemaining = null;
-    let newSet = null;
-    let direction = null;
-
     [r1, r2].forEach(res => {
       if (res && res.clipped && Math.abs(res.remaining) > 0.0001) {
         remainingList.push(res.remaining);
       }
     });
 
+    let avgRemaining = null;
+    let newSet       = null;
+    let direction    = null;
+
     if (remainingList.length > 0) {
       const totalRemaining = remainingList.reduce((a, b) => a + b, 0);
       avgRemaining = totalRemaining / remainingList.length;
-      newSet = setpoint + avgRemaining;
-      direction = avgRemaining > 0 ? "increase" : "decrease";
+      newSet       = setpoint + avgRemaining;
+      direction    = avgRemaining > 0 ? "increase" : "decrease";
 
       houseSummaryText.textContent =
         `Sensors indicate the house setpoint should be ${direction}d ` +
@@ -607,11 +615,11 @@
       if (r1) {
         lines.push("Sensor 1:");
         lines.push(`  Fluke: ${r1.fluke.toFixed(1)} %`);
-        lines.push(`  SKOV: ${r1.skov.toFixed(1)} %`);
+        lines.push(`  SKOV display: ${r1.skovDisplay.toFixed(1)} %`);
         lines.push(`  TargetDiff: ${diff.toFixed(1)} %`);
         lines.push(`  Ideal SKOV (Fluke + TargetDiff): ${r1.idealSkov.toFixed(1)} %`);
-        lines.push(`  Current offset: ${r1.offset.toFixed(1)} %`);
-        lines.push(`  Offset needed (Ideal - SKOV): ${r1.offsetNeeded.toFixed(1)} %`);
+        lines.push(`  Current offset: ${r1.currentOffset.toFixed(1)} %`);
+        lines.push(`  Offset needed (Ideal - SKOV display): ${r1.offsetNeeded.toFixed(1)} %`);
         lines.push(`  Raw new offset (current + needed): ${r1.newOffsetRaw.toFixed(1)} %`);
         lines.push(`  New offset after ±10 limit: ${r1.newOffset.toFixed(1)} %`);
         lines.push(`  Clipped at limit: ${r1.clipped ? "YES" : "NO"}`);
@@ -625,11 +633,11 @@
       if (r2) {
         lines.push("Sensor 2:");
         lines.push(`  Fluke: ${r2.fluke.toFixed(1)} %`);
-        lines.push(`  SKOV: ${r2.skov.toFixed(1)} %`);
+        lines.push(`  SKOV display: ${r2.skovDisplay.toFixed(1)} %`);
         lines.push(`  TargetDiff: ${diff.toFixed(1)} %`);
         lines.push(`  Ideal SKOV (Fluke + TargetDiff): ${r2.idealSkov.toFixed(1)} %`);
-        lines.push(`  Current offset: ${r2.offset.toFixed(1)} %`);
-        lines.push(`  Offset needed (Ideal - SKOV): ${r2.offsetNeeded.toFixed(1)} %`);
+        lines.push(`  Current offset: ${r2.currentOffset.toFixed(1)} %`);
+        lines.push(`  Offset needed (Ideal - SKOV display): ${r2.offsetNeeded.toFixed(1)} %`);
         lines.push(`  Raw new offset (current + needed): ${r2.newOffsetRaw.toFixed(1)} %`);
         lines.push(`  New offset after ±10 limit: ${r2.newOffset.toFixed(1)} %`);
         lines.push(`  Clipped at limit: ${r2.clipped ? "YES" : "NO"}`);
@@ -669,7 +677,7 @@
     }
 
     const logicSection = document.getElementById("logicSection");
-    const logicText = document.getElementById("logicText");
+    const logicText    = document.getElementById("logicText");
 
     logicText.textContent = lastLogic;
     logicSection.style.display = "block";
@@ -677,9 +685,9 @@
   }
 
   function clearForm() {
-    document.getElementById("desired").value = 55;
+    document.getElementById("desired").value    = 55;
     document.getElementById("targetDiff").value = 15;
-    document.getElementById("setpoint").value = 70;
+    document.getElementById("setpoint").value   = 70;
 
     ["fluke1","skov1","fluke2","skov2"].forEach(id => {
       document.getElementById(id).value = "";
@@ -694,15 +702,15 @@
     document.getElementById("offset2Warning").textContent = "";
     document.getElementById("globalError").textContent = "";
 
-    const houseSummaryBox = document.getElementById("houseSummary");
+    const houseSummaryBox  = document.getElementById("houseSummary");
     const houseSummaryText = document.getElementById("houseSummaryText");
-    houseSummaryBox.style.display = "none";
-    houseSummaryText.textContent = "";
+    houseSummaryBox.style.display  = "none";
+    houseSummaryText.textContent   = "";
 
     const logicSection = document.getElementById("logicSection");
-    const logicText = document.getElementById("logicText");
+    const logicText    = document.getElementById("logicText");
     logicSection.style.display = "none";
-    logicText.textContent = "";
+    logicText.textContent      = "";
     lastLogic = "";
   }
 </script>
