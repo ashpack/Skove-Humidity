@@ -7,13 +7,13 @@
   <style>
     body {
       font-family: system-ui, sans-serif;
-      background: #111827;
+      background: #020617;
       color: #f9fafb;
       margin: 0;
       padding: 16px;
     }
     .card {
-      max-width: 520px;
+      max-width: 560px;
       margin: 0 auto;
       background: #020617;
       padding: 18px;
@@ -46,20 +46,11 @@
       background: #020617;
       color: #f9fafb;
     }
-    .row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-    .col {
-      flex: 1 1 0;
-      min-width: 0;
-    }
     .sensor-box {
       margin-top: 14px;
       padding: 12px;
       border-radius: 10px;
-      background: #111827;
+      background: #0b1120;
     }
     .sensor-title {
       font-weight: 600;
@@ -77,9 +68,8 @@
       border-radius: 999px;
       cursor: pointer;
     }
-    button:active {
-      transform: scale(0.98);
-    }
+    button:active { transform: scale(0.98); }
+
     .result-block {
       margin-top: 10px;
       padding: 10px;
@@ -105,40 +95,60 @@
       font-size: 0.75rem;
       margin-bottom: 4px;
     }
+    .limit-note {
+      margin-top: 4px;
+      font-size: 0.8rem;
+      color: #f97373;
+    }
+    .info-box {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 10px;
+      background: #0b1120;
+      font-size: 0.9rem;
+      display: none;
+    }
+    .info-title {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .conf-high {
+      color: #4ade80; /* green */
+      font-weight: 600;
+    }
+    .conf-med {
+      color: #fbbf24; /* amber */
+      font-weight: 600;
+    }
+    .conf-low {
+      color: #f97373; /* red */
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
   <div class="card">
     <h1>SKOV Humidity Offset</h1>
     <p class="sub">
-      2 humidity sensors • Uses Fluke as reference • Auto SKOV ≈ Fluke + 15–20%
+      Target house humidity on Fluke • Offset limit ±10 • Auto SKOV≈Fluke+15–20% • Setpoint & confidence suggestion
     </p>
 
-    <div class="row">
-      <div class="col">
-        <label for="desired">Target actual humidity (% RH)</label>
-        <input id="desired" type="number" step="0.1" value="55" />
-      </div>
-      <div class="col">
-        <label for="minDiff">Min SKOV − Fluke (%)</label>
-        <input id="minDiff" type="number" step="0.1" value="15" />
-      </div>
-      <div class="col">
-        <label for="maxDiff">Max SKOV − Fluke (%)</label>
-        <input id="maxDiff" type="number" step="0.1" value="20" />
-      </div>
-    </div>
+    <label for="desired">Target Fluke humidity (% RH)</label>
+    <input id="desired" type="number" step="0.1" value="55" />
+
+    <label for="setpoint">Current SKOV humidity setpoint (% RH)</label>
+    <input id="setpoint" type="number" step="0.1" placeholder="e.g. 65 or 70" />
 
     <div class="sensor-box">
       <div class="sensor-title">Humidity Sensor 1</div>
       <label for="fluke1">Fluke @ Sensor 1 (% RH)</label>
-      <input id="fluke1" type="number" step="0.1" placeholder="e.g. 61" />
+      <input id="fluke1" type="number" step="0.1" placeholder="e.g. 58" />
 
       <label for="skov1">SKOV Sensor 1 display (% RH)</label>
-      <input id="skov1" type="number" step="0.1" placeholder="e.g. 73.8" />
+      <input id="skov1" type="number" step="0.1" placeholder="e.g. 65.3" />
 
       <label for="offset1">Current Sensor 1 offset</label>
-      <input id="offset1" type="number" step="0.1" placeholder="e.g. -8" />
+      <input id="offset1" type="number" step="0.1" placeholder="e.g. 10" />
 
       <div id="result1" class="result-block">
         <div class="result-title">Sensor 1 result</div>
@@ -146,19 +156,20 @@
         <div>Set SKOV humidity offset to:</div>
         <div id="offset1Value" class="offset-value"></div>
         <div id="offset1Change"></div>
+        <div id="limit1" class="limit-note"></div>
       </div>
     </div>
 
     <div class="sensor-box">
       <div class="sensor-title">Humidity Sensor 2</div>
       <label for="fluke2">Fluke @ Sensor 2 (% RH)</label>
-      <input id="fluke2" type="number" step="0.1" placeholder="e.g. 61" />
+      <input id="fluke2" type="number" step="0.1" placeholder="e.g. 55" />
 
       <label for="skov2">SKOV Sensor 2 display (% RH)</label>
-      <input id="skov2" type="number" step="0.1" placeholder="e.g. 73.2" />
+      <input id="skov2" type="number" step="0.1" placeholder="e.g. 62.3" />
 
       <label for="offset2">Current Sensor 2 offset</label>
-      <input id="offset2" type="number" step="0.1" placeholder="e.g. -10" />
+      <input id="offset2" type="number" step="0.1" placeholder="e.g. 10" />
 
       <div id="result2" class="result-block">
         <div class="result-title">Sensor 2 result</div>
@@ -166,81 +177,229 @@
         <div>Set SKOV humidity offset to:</div>
         <div id="offset2Value" class="offset-value"></div>
         <div id="offset2Change"></div>
+        <div id="limit2" class="limit-note"></div>
       </div>
     </div>
 
-    <button onclick="calc()">Calculate Offsets</button>
+    <button onclick="calc()">Calculate</button>
+
+    <div id="setpointBox" class="info-box">
+      <div class="info-title">House setpoint suggestion</div>
+      <div id="setpointText"></div>
+    </div>
+
+    <div id="confidenceBox" class="info-box">
+      <div class="info-title">Reading confidence</div>
+      <div id="confidenceLabel"></div>
+      <div id="confidenceDetail"></div>
+    </div>
   </div>
 
   <script>
-    function r1(v) { return Math.round(v * 10) / 10; }
+    // internal SKOV–Fluke rule and offset limits
+    const MIN_DIFF = 15;   // SKOV at least 15% above Fluke
+    const MAX_DIFF = 20;   // SKOV at most 20% above Fluke
+    const OFFSET_LIMIT = 10;
 
-    // decide SKOV–Fluke diff between min and max based on how far Fluke is from target
-    function chooseDiff(fluke, desired, minD, maxD) {
-      const range = maxD - minD;
-      const error = fluke - desired; // +ve = too humid
-      if (error <= -5) return minD;      // much too dry → use lower diff
-      if (error >= 5)  return maxD;      // much too humid → use higher diff
-      // in between -5 and +5 → interpolate smoothly
-      const t = (error + 5) / 10;        // maps -5..+5 → 0..1
-      return minD + t * range;
+    function r1(v) {
+      return Math.round(v * 10) / 10;
     }
 
-    function calcSensor(fluke, skov, offset, chipEl, valueEl, changeEl, resultBox,
-                        desired, minD, maxD) {
+    // decide SKOV–Fluke diff between 15 and 20 based on how far Fluke is from target
+    function chooseDiff(fluke, desired) {
+      const range = MAX_DIFF - MIN_DIFF;
+      const error = fluke - desired; // +ve = too humid, -ve = too dry
+
+      if (error <= -5) return MIN_DIFF;   // very dry → use lower diff
+      if (error >= 5)  return MAX_DIFF;   // very humid → use higher diff
+
+      // in between -5 and +5 → interpolate smoothly
+      const t = (error + 5) / 10;         // -5..+5 → 0..1
+      return MIN_DIFF + t * range;
+    }
+
+    function calcSensor(fluke, skov, offset, desired,
+                        chipEl, valueEl, changeEl, limitEl, boxEl) {
       if (isNaN(fluke) || isNaN(skov) || isNaN(offset)) {
-        resultBox.style.display = "none";
-        return;
+        boxEl.style.display = "none";
+        return {
+          used: false,
+          residual: 0,
+          fluke: null,
+          skov: null,
+          diff: null
+        };
       }
 
-      const diff = chooseDiff(fluke, desired, minD, maxD);
+      const diff = chooseDiff(fluke, desired);
       const targetSkov = fluke + diff;
       const displayChange = targetSkov - skov;
-      const newOffset = offset + displayChange;
-      const change = newOffset - offset;
+
+      const rawNewOffset = offset + displayChange;
+      const newOffset = Math.max(-OFFSET_LIMIT, Math.min(OFFSET_LIMIT, rawNewOffset));
+      const offsetChange = newOffset - offset;
+      const residual = displayChange - offsetChange; // what offset couldn't do
 
       chipEl.textContent = "Using SKOV ≈ Fluke + " + r1(diff) + "%";
       valueEl.textContent = (newOffset >= 0 ? "+" : "") + r1(newOffset);
       changeEl.textContent =
         "Change from current: " +
-        (change >= 0 ? "+" : "") + r1(change);
+        (offsetChange >= 0 ? "+" : "") + r1(offsetChange);
 
-      resultBox.style.display = "block";
+      if (Math.abs(rawNewOffset) > OFFSET_LIMIT + 1e-6) {
+        limitEl.textContent =
+          "Offset limit ±" + OFFSET_LIMIT +
+          "% reached here. Remaining adjustment will be handled via setpoint suggestion.";
+      } else {
+        limitEl.textContent = "";
+      }
+
+      boxEl.style.display = "block";
+      return {
+        used: true,
+        residual: residual,
+        fluke: fluke,
+        skov: skov,
+        diff: skov - fluke
+      };
+    }
+
+    function calcConfidence(s1, s2) {
+      const box = document.getElementById("confidenceBox");
+      const label = document.getElementById("confidenceLabel");
+      const detail = document.getElementById("confidenceDetail");
+
+      // nothing entered
+      if (!s1.used && !s2.used) {
+        box.style.display = "none";
+        return;
+      }
+
+      let level = "high"; // high, medium, low
+      let reasons = [];
+
+      // If only one sensor is used, we can't cross-check
+      if ((s1.used && !s2.used) || (!s1.used && s2.used)) {
+        level = "medium";
+        reasons.push("Only one sensor has valid readings. No cross-check between sensors.");
+      }
+
+      if (s1.used && s2.used) {
+        const flukeGap = Math.abs(s1.fluke - s2.fluke);
+        const diffGap = Math.abs(s1.diff - s2.diff);
+
+        if (flukeGap > 6 || diffGap > 7) {
+          level = "low";
+          reasons.push(
+            "Large disagreement between sensors: " +
+            "Fluke difference " + r1(flukeGap) + "%, " +
+            "SKOV–Fluke difference gap " + r1(diffGap) + "%."
+          );
+        } else if (flukeGap > 3 || diffGap > 4) {
+          if (level !== "low") level = "medium";
+          reasons.push(
+            "Moderate disagreement between sensors: " +
+            "Fluke difference " + r1(flukeGap) + "%, " +
+            "SKOV–Fluke difference gap " + r1(diffGap) + "%."
+          );
+        }
+      }
+
+      // Residual check – if offsets hit limits and we rely heavily on setpoint
+      const residuals = [];
+      if (s1.used) residuals.push(Math.abs(s1.residual));
+      if (s2.used) residuals.push(Math.abs(s2.residual));
+
+      if (residuals.length > 0) {
+        const avgResidual = residuals.reduce((a,b)=>a+b,0) / residuals.length;
+        if (avgResidual > 4 && level !== "low") {
+          // knock high → medium, medium stays
+          if (level === "high") level = "medium";
+          reasons.push(
+            "Offsets cannot fully correct SKOV; remaining average adjustment " +
+            r1(avgResidual) + "% is handled via setpoint."
+          );
+        }
+      }
+
+      // Build label text
+      let labelText = "";
+      if (level === "high") {
+        labelText = "<span class='conf-high'>HIGH confidence</span> – sensors agree and corrections are within normal range.";
+      } else if (level === "medium") {
+        labelText = "<span class='conf-med'>MEDIUM confidence</span> – readings are usable, but recheck after adjustments.";
+      } else {
+        labelText = "<span class='conf-low'>LOW confidence</span> – sensor readings disagree. Verify with Fluke before making big changes.";
+      }
+
+      box.style.display = "block";
+      label.innerHTML = labelText;
+
+      if (reasons.length > 0) {
+        detail.textContent = reasons.join(" ");
+      } else {
+        detail.textContent = "No major issues detected between Sensor 1 and Sensor 2 readings.";
+      }
     }
 
     function calc() {
       const desired = parseFloat(document.getElementById("desired").value);
-      const minD = parseFloat(document.getElementById("minDiff").value);
-      const maxD = parseFloat(document.getElementById("maxDiff").value);
+      const setpoint = parseFloat(document.getElementById("setpoint").value);
 
-      if (isNaN(desired) || isNaN(minD) || isNaN(maxD)) {
-        alert("Please fill target humidity and min/max diff.");
+      if (isNaN(desired) || isNaN(setpoint)) {
+        alert("Please fill target Fluke humidity and current setpoint.");
         return;
       }
 
-      // Sensor 1
-      calcSensor(
+      const s1 = calcSensor(
         parseFloat(document.getElementById("fluke1").value),
         parseFloat(document.getElementById("skov1").value),
         parseFloat(document.getElementById("offset1").value),
+        desired,
         document.getElementById("chip1"),
         document.getElementById("offset1Value"),
         document.getElementById("offset1Change"),
-        document.getElementById("result1"),
-        desired, minD, maxD
+        document.getElementById("limit1"),
+        document.getElementById("result1")
       );
 
-      // Sensor 2
-      calcSensor(
+      const s2 = calcSensor(
         parseFloat(document.getElementById("fluke2").value),
         parseFloat(document.getElementById("skov2").value),
         parseFloat(document.getElementById("offset2").value),
+        desired,
         document.getElementById("chip2"),
         document.getElementById("offset2Value"),
         document.getElementById("offset2Change"),
-        document.getElementById("result2"),
-        desired, minD, maxD
+        document.getElementById("limit2"),
+        document.getElementById("result2")
       );
+
+      // Setpoint suggestion from residuals
+      const setpointBox = document.getElementById("setpointBox");
+      const setpointText = document.getElementById("setpointText");
+      const residuals = [];
+      if (s1.used && Math.abs(s1.residual) > 1e-6) residuals.push(s1.residual);
+      if (s2.used && Math.abs(s2.residual) > 1e-6) residuals.push(s2.residual);
+
+      if (residuals.length === 0) {
+        setpointBox.style.display = "block";
+        setpointText.textContent =
+          "No setpoint adjustment needed. Keep SKOV humidity setpoint at " +
+          r1(setpoint) + " % after setting the new offsets.";
+      } else {
+        const avgResidual = residuals.reduce((a, b) => a + b, 0) / residuals.length;
+        const newSetpoint = setpoint + avgResidual;
+        setpointBox.style.display = "block";
+        setpointText.textContent =
+          "Current setpoint: " + r1(setpoint) + " %. " +
+          "Suggested new setpoint: " + r1(newSetpoint) +
+          " % to help the house stabilise around " + r1(desired) +
+          " % on the Fluke once offsets are set.";
+      }
+
+      // Confidence indicator
+      calcConfidence(s1, s2);
     }
   </script>
 </body>
