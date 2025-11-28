@@ -1,719 +1,247 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>SKOV Humidity Offset</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-
+  <meta charset="UTF-8" />
+  <title>SKOV Humidity Offset – 2 Sensors</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    :root {
-      --bg-main: #0f1218;
-      --card-bg: #191d26;
-      --card-border: #232838;
-      --accent-blue: #0b84ff;
-      --accent-blue-dark: #024a88;
-      --accent-blue-light: #37a0f4;
-      --text-main: #f5f7ff;
-      --text-muted: #a7b0c5;
-      --danger: #ff4b5c;
-      --ok-bg: #e6f3ff;
-    }
-
-    * { box-sizing: border-box; }
-
     body {
+      font-family: system-ui, sans-serif;
+      background: #111827;
+      color: #f9fafb;
       margin: 0;
-      padding: 12px;
-      background: radial-gradient(circle at top, #151a25 0, #05060a 55%);
-      color: var(--text-main);
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      padding: 16px;
     }
-
-    .app {
-      max-width: 820px;
+    .card {
+      max-width: 520px;
       margin: 0 auto;
-    }
-
-    .header {
-      border-radius: 18px;
-      padding: 14px 16px;
-      margin-bottom: 12px;
-      background: linear-gradient(135deg, var(--accent-blue-dark), var(--accent-blue-light));
-      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
-      color: white;
-    }
-
-    .header-title {
-      font-size: 1.3rem;
-      font-weight: 650;
-      margin-bottom: 2px;
-    }
-
-    .header-subtitle {
-      font-size: 0.85rem;
-      opacity: 0.9;
-    }
-
-    .house-card {
-      background: var(--card-bg);
+      background: #020617;
+      padding: 18px;
       border-radius: 14px;
-      padding: 10px 12px 12px;
-      border: 1px solid var(--card-border);
-      margin-bottom: 10px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.6);
     }
-
-    .section-heading {
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--text-muted);
-      margin-bottom: 6px;
+    h1 {
+      text-align: center;
+      font-size: 1.3rem;
+      margin: 0 0 4px;
     }
-
-    .house-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
+    .sub {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #9ca3af;
+      margin: 0 0 12px;
     }
-
     label {
       display: block;
-      font-size: 0.8rem;
-      margin-bottom: 3px;
-      color: var(--text-muted);
-    }
-
-    input[type="number"],
-    input[type="text"] {
-      width: 100%;
-      padding: 8px 9px;
-      border-radius: 8px;
-      border: 1px solid #323647;
-      background: #0d1017;
-      color: var(--text-main);
-      font-size: 0.95rem;
-      outline: none;
-      transition: border-color 0.12s ease, box-shadow 0.12s ease;
-    }
-
-    input:focus {
-      border-color: var(--accent-blue);
-      box-shadow: 0 0 0 1px rgba(11, 132, 255, 0.7);
-    }
-
-    input::placeholder {
-      color: #596073;
-    }
-
-    .sensors-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-      gap: 10px;
-      margin-top: 8px;
-    }
-
-    .sensor-card {
-      background: var(--card-bg);
-      border-radius: 16px;
-      padding: 10px 12px 12px;
-      border: 1px solid var(--card-border);
-      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
-    }
-
-    .sensor-title {
+      margin-top: 10px;
       font-size: 0.9rem;
-      font-weight: 600;
-      margin-bottom: 8px;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: 1px solid #4b5563;
+      box-sizing: border-box;
+      background: #020617;
+      color: #f9fafb;
+    }
+    .row {
       display: flex;
-      align-items: center;
-      gap: 6px;
+      flex-wrap: wrap;
+      gap: 10px;
     }
-
-    .sensor-pill {
-      width: 18px;
-      height: 18px;
-      border-radius: 999px;
-      background: var(--accent-blue);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.7rem;
-      font-weight: 700;
-      color: white;
+    .col {
+      flex: 1 1 0;
+      min-width: 0;
     }
-
-    .field-block {
-      margin-bottom: 8px;
-    }
-
-    .offset-row {
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      gap: 6px;
-      align-items: center;
-    }
-
-    .offset-btn {
-      width: 34px;
-      height: 34px;
-      border-radius: 999px;
-      border: none;
-      background: #202431;
-      color: var(--text-main);
-      font-size: 1.2rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-      padding: 0;
-    }
-
-    .offset-btn:active {
-      transform: scale(0.93);
-      background: #30384a;
-    }
-
-    .result-box {
-      margin-top: 8px;
-      padding: 8px 9px;
+    .sensor-box {
+      margin-top: 14px;
+      padding: 12px;
       border-radius: 10px;
-      background: var(--ok-bg);
-      color: #0b1730;
-      font-size: 0.87rem;
-      display: none;
+      background: #111827;
     }
-
+    .sensor-title {
+      font-weight: 600;
+      margin-bottom: 4px;
+      font-size: 0.95rem;
+    }
+    button {
+      margin-top: 16px;
+      width: 100%;
+      padding: 10px;
+      font-size: 1rem;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+    button:active {
+      transform: scale(0.98);
+    }
+    .result-block {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      background: #020617;
+      display: none;
+      font-size: 0.9rem;
+    }
     .result-title {
       font-weight: 600;
       margin-bottom: 4px;
     }
-
-    .result-offset {
+    .offset-value {
+      font-size: 1.4rem;
       font-weight: 700;
-      font-size: 0.95rem;
+      margin: 4px 0;
     }
-
-    .warn {
-      margin-top: 6px;
-      padding-top: 4px;
-      border-top: 1px dashed rgba(0, 0, 0, 0.15);
-      color: var(--danger);
-      white-space: pre-line;
-    }
-
-    .controls {
-      margin-top: 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      align-items: flex-start;
-    }
-
-    .btn {
+    .chip {
+      display: inline-block;
+      padding: 2px 8px;
       border-radius: 999px;
-      padding: 11px 16px;
-      border: none;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .btn-primary {
-      width: 100%;
-      background: linear-gradient(135deg, var(--accent-blue-dark), var(--accent-blue));
-      color: white;
-      box-shadow: 0 10px 20px rgba(1, 60, 120, 0.6);
-    }
-
-    .btn-primary:active {
-      transform: scale(0.97);
-      box-shadow: 0 4px 10px rgba(1, 60, 120, 0.6);
-    }
-
-    .btn-secondary {
-      width: 100%;
-      background: transparent;
-      border: 1px solid #3a4257;
-      color: var(--text-muted);
-      padding: 8px 16px;
-      font-size: 0.9rem;
-    }
-
-    .btn-secondary:active {
-      background: #1a1f2b;
-    }
-
-    .btn-ghost-small {
-      margin-top: 2px;
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      font-size: 0.78rem;
-      padding: 2px 0;
-      cursor: pointer;
-      opacity: 0.5;
-    }
-
-    .btn-ghost-small:hover {
-      opacity: 0.9;
-      text-decoration: underline;
-    }
-
-    .btn-ghost-small:active {
-      opacity: 1;
-    }
-
-    .error {
-      margin-top: 4px;
-      font-size: 0.86rem;
-      color: #ffb4c2;
-      min-height: 1em;
-    }
-
-    .house-summary {
-      margin-top: 10px;
-      padding: 8px 10px;
-      border-radius: 10px;
-      background: #141823;
-      border: 1px dashed var(--card-border);
-      font-size: 0.9rem;
-      display: none;
-      white-space: pre-line;
-    }
-
-    .house-summary-title {
-      font-weight: 600;
+      background: #1d4ed8;
+      font-size: 0.75rem;
       margin-bottom: 4px;
-      color: var(--text-main);
-    }
-
-    .logic-panel {
-      margin-top: 10px;
-      padding: 8px 10px;
-      border-radius: 10px;
-      background: #101320;
-      border: 1px dashed #303549;
-      font-size: 0.85rem;
-      display: none;
-      white-space: pre;
-      overflow-x: auto;
-      font-family: "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    }
-
-    .logic-panel-title {
-      font-weight: 600;
-      margin-bottom: 4px;
-      color: var(--text-main);
-    }
-
-    @media (max-width: 599px) {
-      .house-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-      .house-grid > div:last-child {
-        grid-column: span 2;
-      }
-
-      .btn-primary,
-      .btn-secondary {
-        width: 100%;
-      }
     }
   </style>
 </head>
-
 <body>
-<div class="app">
+  <div class="card">
+    <h1>SKOV Humidity Offset</h1>
+    <p class="sub">
+      2 humidity sensors • Uses Fluke as reference • Auto SKOV ≈ Fluke + 15–20%
+    </p>
 
-  <header class="header">
-    <div class="header-title">SKOV Humidity Offset</div>
-    <div class="header-subtitle">
-      Target actual 55% • SKOV setpoint 70% • Max offset ±10 • Auto setpoint suggestion
-    </div>
-  </header>
-
-  <!-- HOUSE TARGET -->
-  <section class="house-card">
-    <div class="section-heading">House target</div>
-    <div class="house-grid">
-      <div>
-        <label for="desired">Desired actual (% RH)</label>
-        <input id="desired" type="number" value="55" step="0.1">
+    <div class="row">
+      <div class="col">
+        <label for="desired">Target actual humidity (% RH)</label>
+        <input id="desired" type="number" step="0.1" value="55" />
       </div>
-      <div>
-        <label for="targetDiff">Target SKOV above actual (%)</label>
-        <input id="targetDiff" type="number" value="15" step="0.1">
+      <div class="col">
+        <label for="minDiff">Min SKOV − Fluke (%)</label>
+        <input id="minDiff" type="number" step="0.1" value="15" />
       </div>
-      <div>
-        <label for="setpoint">Current SKOV setpoint (% RH)</label>
-        <input id="setpoint" type="number" value="70" step="0.1">
+      <div class="col">
+        <label for="maxDiff">Max SKOV − Fluke (%)</label>
+        <input id="maxDiff" type="number" step="0.1" value="20" />
       </div>
     </div>
-  </section>
 
-  <!-- SENSORS SIDE BY SIDE -->
-  <section class="sensors-grid">
+    <div class="sensor-box">
+      <div class="sensor-title">Humidity Sensor 1</div>
+      <label for="fluke1">Fluke @ Sensor 1 (% RH)</label>
+      <input id="fluke1" type="number" step="0.1" placeholder="e.g. 61" />
 
-    <!-- SENSOR 1 -->
-    <div class="sensor-card">
-      <div class="sensor-title">
-        <span class="sensor-pill">1</span> Sensor 1
-      </div>
+      <label for="skov1">SKOV Sensor 1 display (% RH)</label>
+      <input id="skov1" type="number" step="0.1" placeholder="e.g. 73.8" />
 
-      <div class="field-block">
-        <label for="fluke1">Fluke @ Sensor 1 (% RH)</label>
-        <input id="fluke1" type="number" placeholder="e.g. 58.3" step="0.1">
-      </div>
+      <label for="offset1">Current Sensor 1 offset</label>
+      <input id="offset1" type="number" step="0.1" placeholder="e.g. -8" />
 
-      <div class="field-block">
-        <label for="skov1">SKOV Sensor 1 display (% RH)</label>
-        <input id="skov1" type="number" placeholder="e.g. 71.1" step="0.1">
-      </div>
-
-      <div class="field-block">
-        <label for="offset1">Current Sensor 1 offset</label>
-        <div class="offset-row">
-          <button class="offset-btn" type="button" onclick="stepOffset('offset1', -0.5)">−</button>
-          <input id="offset1" type="text" value="0" inputmode="decimal">
-          <button class="offset-btn" type="button" onclick="stepOffset('offset1', 0.5)">+</button>
-        </div>
-      </div>
-
-      <div id="result1" class="result-box">
+      <div id="result1" class="result-block">
         <div class="result-title">Sensor 1 result</div>
-        <div>Set offset to: <span id="offset1New" class="result-offset"></span></div>
-        <div id="offset1Warning" class="warn"></div>
+        <div id="chip1" class="chip"></div>
+        <div>Set SKOV humidity offset to:</div>
+        <div id="offset1Value" class="offset-value"></div>
+        <div id="offset1Change"></div>
       </div>
     </div>
 
-    <!-- SENSOR 2 -->
-    <div class="sensor-card">
-      <div class="sensor-title">
-        <span class="sensor-pill">2</span> Sensor 2
-      </div>
+    <div class="sensor-box">
+      <div class="sensor-title">Humidity Sensor 2</div>
+      <label for="fluke2">Fluke @ Sensor 2 (% RH)</label>
+      <input id="fluke2" type="number" step="0.1" placeholder="e.g. 61" />
 
-      <div class="field-block">
-        <label for="fluke2">Fluke @ Sensor 2 (% RH)</label>
-        <input id="fluke2" type="number" placeholder="e.g. 60.0" step="0.1">
-      </div>
+      <label for="skov2">SKOV Sensor 2 display (% RH)</label>
+      <input id="skov2" type="number" step="0.1" placeholder="e.g. 73.2" />
 
-      <div class="field-block">
-        <label for="skov2">SKOV Sensor 2 display (% RH)</label>
-        <input id="skov2" type="number" placeholder="e.g. 75.1" step="0.1">
-      </div>
+      <label for="offset2">Current Sensor 2 offset</label>
+      <input id="offset2" type="number" step="0.1" placeholder="e.g. -10" />
 
-      <div class="field-block">
-        <label for="offset2">Current Sensor 2 offset</label>
-        <div class="offset-row">
-          <button class="offset-btn" type="button" onclick="stepOffset('offset2', -0.5)">−</button>
-          <input id="offset2" type="text" value="0" inputmode="decimal">
-          <button class="offset-btn" type="button" onclick="stepOffset('offset2', 0.5)">+</button>
-        </div>
-      </div>
-
-      <div id="result2" class="result-box">
+      <div id="result2" class="result-block">
         <div class="result-title">Sensor 2 result</div>
-        <div>Set offset to: <span id="offset2New" class="result-offset"></span></div>
-        <div id="offset2Warning" class="warn"></div>
+        <div id="chip2" class="chip"></div>
+        <div>Set SKOV humidity offset to:</div>
+        <div id="offset2Value" class="offset-value"></div>
+        <div id="offset2Change"></div>
       </div>
     </div>
 
-  </section>
+    <button onclick="calc()">Calculate Offsets</button>
+  </div>
 
-  <!-- CONTROLS -->
-  <section class="controls">
-    <button class="btn btn-primary" type="button" onclick="calculate()">Calculate</button>
-    <button class="btn btn-secondary" type="button" onclick="clearForm()">Clear form</button>
-    <button class="btn-ghost-small" type="button" onclick="requestLogic()">
-      🔍 Show calculation breakdown
-    </button>
-    <div id="globalError" class="error"></div>
-  </section>
+  <script>
+    function r1(v) { return Math.round(v * 10) / 10; }
 
-  <!-- HOUSE SUMMARY -->
-  <section class="house-summary" id="houseSummary">
-    <div class="house-summary-title">House setpoint suggestion</div>
-    <div id="houseSummaryText"></div>
-  </section>
-
-  <!-- LOGIC BREAKDOWN -->
-  <section class="logic-panel" id="logicSection">
-    <div class="logic-panel-title">Calculation breakdown</div>
-    <div id="logicText"></div>
-  </section>
-
-</div>
-
-<script>
-  let lastLogic = "";
-
-  function toNum(v, def = 0) {
-    if (v === null || v === undefined) return def;
-    v = String(v).replace(",", ".").trim();
-    const n = parseFloat(v);
-    return isNaN(n) ? def : n;
-  }
-
-  function stepOffset(id, delta) {
-    const input = document.getElementById(id);
-    const current = toNum(input.value, 0);
-    let next = current + delta;
-    if (next > 10) next = 10;
-    if (next < -10) next = -10;
-    input.value = next.toFixed(1);
-  }
-
-  // Core per-sensor logic:
-  // idealSkov = fluke + targetDiff
-  // offsetNeeded = idealSkov - skovDisplay
-  // newOffsetRaw = currentOffset + offsetNeeded
-  // Clamp to ±10; leftover goes into setpoint via "remaining".
-  function calculateSensor(fluke, skovDisplay, currentOffset, targetDiff) {
-    const idealSkov = fluke + targetDiff;
-    const offsetNeeded = idealSkov - skovDisplay;
-    const newOffsetRaw = currentOffset + offsetNeeded;
-
-    const max = 10;
-    let newOffset = newOffsetRaw;
-    let clipped = false;
-
-    if (newOffset > max) { newOffset = max; clipped = true; }
-    if (newOffset < -max) { newOffset = -max; clipped = true; }
-
-    const remaining = newOffsetRaw - newOffset; // leftover after hitting limit
-
-    return {
-      idealSkov,
-      offsetNeeded,
-      newOffsetRaw,
-      newOffset,
-      remaining,
-      clipped
-    };
-  }
-
-  function handleSensor(index, flukeId, skovId, offsetId, sensorName, targetDiff) {
-    const flukeStr = document.getElementById(flukeId).value.trim();
-    const skovStr  = document.getElementById(skovId).value.trim();
-
-    const resultId     = index === 1 ? "result1" : "result2";
-    const offsetSpanId = index === 1 ? "offset1New" : "offset2New";
-    const warningId    = index === 1 ? "offset1Warning" : "offset2Warning";
-
-    const resultBox  = document.getElementById(resultId);
-    const offsetSpan = document.getElementById(offsetSpanId);
-    const warnEl     = document.getElementById(warningId);
-
-    // If both empty: hide and skip
-    if (!flukeStr && !skovStr) {
-      resultBox.style.display = "none";
-      warnEl.textContent = "";
-      return null;
+    // decide SKOV–Fluke diff between min and max based on how far Fluke is from target
+    function chooseDiff(fluke, desired, minD, maxD) {
+      const range = maxD - minD;
+      const error = fluke - desired; // +ve = too humid
+      if (error <= -5) return minD;      // much too dry → use lower diff
+      if (error >= 5)  return maxD;      // much too humid → use higher diff
+      // in between -5 and +5 → interpolate smoothly
+      const t = (error + 5) / 10;        // maps -5..+5 → 0..1
+      return minD + t * range;
     }
 
-    // If one missing: hide and skip
-    if (!flukeStr || !skovStr) {
-      resultBox.style.display = "none";
-      warnEl.textContent = "";
-      return null;
-    }
-
-    const fluke        = toNum(flukeStr, NaN);
-    const skovDisplay  = toNum(skovStr, NaN);
-    const currentOffset = toNum(document.getElementById(offsetId).value, 0);
-
-    if (isNaN(fluke) || isNaN(skovDisplay)) {
-      resultBox.style.display = "none";
-      warnEl.textContent = "";
-      return null;
-    }
-
-    const res = calculateSensor(fluke, skovDisplay, currentOffset, targetDiff);
-
-    offsetSpan.textContent =
-      (res.newOffset >= 0 ? "+" : "") + res.newOffset.toFixed(1) + "%";
-
-    if (res.clipped) {
-      warnEl.textContent =
-        `Offset limit reached for ${sensorName}.\n` +
-        `Any extra adjustment will be handled in the house setpoint suggestion below.`;
-    } else {
-      warnEl.textContent = "";
-    }
-
-    resultBox.style.display = "block";
-
-    return {
-      fluke,
-      skovDisplay,
-      currentOffset,
-      sensorName,
-      ...res
-    };
-  }
-
-  function calculate() {
-    const desired  = toNum(document.getElementById("desired").value, NaN);
-    const diff     = toNum(document.getElementById("targetDiff").value, NaN);
-    const setpoint = toNum(document.getElementById("setpoint").value, NaN);
-
-    const globalError      = document.getElementById("globalError");
-    const houseSummaryBox  = document.getElementById("houseSummary");
-    const houseSummaryText = document.getElementById("houseSummaryText");
-    const logicSection     = document.getElementById("logicSection");
-    const logicText        = document.getElementById("logicText");
-
-    globalError.textContent = "";
-    houseSummaryBox.style.display = "none";
-    houseSummaryText.textContent = "";
-    logicSection.style.display = "none";
-    logicText.textContent = "";
-    lastLogic = "";
-
-    if (isNaN(desired) || isNaN(diff) || isNaN(setpoint)) {
-      globalError.textContent = "Check house target values (e.g. 55 / 15 / 70).";
-      return;
-    }
-
-    const r1 = handleSensor(1, "fluke1", "skov1", "offset1", "Sensor 1", diff);
-    const r2 = handleSensor(2, "fluke2", "skov2", "offset2", "Sensor 2", diff);
-
-    // House setpoint suggestion (Option B: average remaining of sensors that hit the limit)
-    const remainingList = [];
-    [r1, r2].forEach(res => {
-      if (res && res.clipped && Math.abs(res.remaining) > 0.0001) {
-        remainingList.push(res.remaining);
-      }
-    });
-
-    let avgRemaining = null;
-    let newSet       = null;
-    let direction    = null;
-
-    if (remainingList.length > 0) {
-      const totalRemaining = remainingList.reduce((a, b) => a + b, 0);
-      avgRemaining = totalRemaining / remainingList.length;
-      newSet       = setpoint + avgRemaining;
-      direction    = avgRemaining > 0 ? "increase" : "decrease";
-
-      houseSummaryText.textContent =
-        `Sensors indicate the house setpoint should be ${direction}d ` +
-        `from ${setpoint.toFixed(1)}% to about ${newSet.toFixed(1)}%.\n\n` +
-        `Before adjusting the setpoint, check for:\n` +
-        `• Faulty Sensor\n` +
-        `• Spray cooling not spraying evenly across the house\n` +
-        `• Check cooling pads for any issues\n\n` +
-        `⚠️ Manager permission required before changing the setpoint.`;
-
-      houseSummaryBox.style.display = "block";
-    }
-
-    // Build logic breakdown text
-    const lines = [];
-
-    if (r1 || r2) {
-      if (r1) {
-        lines.push("Sensor 1:");
-        lines.push(`  Fluke: ${r1.fluke.toFixed(1)} %`);
-        lines.push(`  SKOV display: ${r1.skovDisplay.toFixed(1)} %`);
-        lines.push(`  TargetDiff: ${diff.toFixed(1)} %`);
-        lines.push(`  Ideal SKOV (Fluke + TargetDiff): ${r1.idealSkov.toFixed(1)} %`);
-        lines.push(`  Current offset: ${r1.currentOffset.toFixed(1)} %`);
-        lines.push(`  Offset needed (Ideal - SKOV display): ${r1.offsetNeeded.toFixed(1)} %`);
-        lines.push(`  Raw new offset (current + needed): ${r1.newOffsetRaw.toFixed(1)} %`);
-        lines.push(`  New offset after ±10 limit: ${r1.newOffset.toFixed(1)} %`);
-        lines.push(`  Clipped at limit: ${r1.clipped ? "YES" : "NO"}`);
-        lines.push(`  Remaining after limit (raw - new): ${r1.remaining.toFixed(1)} %`);
-        lines.push("");
-      } else {
-        lines.push("Sensor 1: no valid data entered.");
-        lines.push("");
+    function calcSensor(fluke, skov, offset, chipEl, valueEl, changeEl, resultBox,
+                        desired, minD, maxD) {
+      if (isNaN(fluke) || isNaN(skov) || isNaN(offset)) {
+        resultBox.style.display = "none";
+        return;
       }
 
-      if (r2) {
-        lines.push("Sensor 2:");
-        lines.push(`  Fluke: ${r2.fluke.toFixed(1)} %`);
-        lines.push(`  SKOV display: ${r2.skovDisplay.toFixed(1)} %`);
-        lines.push(`  TargetDiff: ${diff.toFixed(1)} %`);
-        lines.push(`  Ideal SKOV (Fluke + TargetDiff): ${r2.idealSkov.toFixed(1)} %`);
-        lines.push(`  Current offset: ${r2.currentOffset.toFixed(1)} %`);
-        lines.push(`  Offset needed (Ideal - SKOV display): ${r2.offsetNeeded.toFixed(1)} %`);
-        lines.push(`  Raw new offset (current + needed): ${r2.newOffsetRaw.toFixed(1)} %`);
-        lines.push(`  New offset after ±10 limit: ${r2.newOffset.toFixed(1)} %`);
-        lines.push(`  Clipped at limit: ${r2.clipped ? "YES" : "NO"}`);
-        lines.push(`  Remaining after limit (raw - new): ${r2.remaining.toFixed(1)} %`);
-        lines.push("");
-      } else {
-        lines.push("Sensor 2: no valid data entered.");
-        lines.push("");
-      }
+      const diff = chooseDiff(fluke, desired, minD, maxD);
+      const targetSkov = fluke + diff;
+      const displayChange = targetSkov - skov;
+      const newOffset = offset + displayChange;
+      const change = newOffset - offset;
 
-      if (remainingList.length > 0 && avgRemaining !== null && newSet !== null) {
-        lines.push("House summary:");
-        lines.push(`  Current setpoint: ${setpoint.toFixed(1)} %`);
-        lines.push(`  Number of sensors at offset limit: ${remainingList.length}`);
-        lines.push(
-          `  Average remaining adjustment from limited sensors: ${avgRemaining.toFixed(1)} %`
-        );
-        lines.push(
-          `  Suggested new setpoint: ${setpoint.toFixed(1)} % -> ${newSet.toFixed(1)} % (${direction}d)`
-        );
-      } else {
-        lines.push("House summary:");
-        lines.push("  No sensors hit the ±10 offset limit.");
-        lines.push("  No setpoint change suggested by calculator.");
-      }
-    } else {
-      lines.push("No valid sensor data entered – nothing to calculate.");
+      chipEl.textContent = "Using SKOV ≈ Fluke + " + r1(diff) + "%";
+      valueEl.textContent = (newOffset >= 0 ? "+" : "") + r1(newOffset);
+      changeEl.textContent =
+        "Change from current: " +
+        (change >= 0 ? "+" : "") + r1(change);
+
+      resultBox.style.display = "block";
     }
 
-    lastLogic = lines.join("\n");
-  }
+    function calc() {
+      const desired = parseFloat(document.getElementById("desired").value);
+      const minD = parseFloat(document.getElementById("minDiff").value);
+      const maxD = parseFloat(document.getElementById("maxDiff").value);
 
-  function requestLogic() {
-    if (!lastLogic) {
-      alert("Run a calculation first.");
-      return;
+      if (isNaN(desired) || isNaN(minD) || isNaN(maxD)) {
+        alert("Please fill target humidity and min/max diff.");
+        return;
+      }
+
+      // Sensor 1
+      calcSensor(
+        parseFloat(document.getElementById("fluke1").value),
+        parseFloat(document.getElementById("skov1").value),
+        parseFloat(document.getElementById("offset1").value),
+        document.getElementById("chip1"),
+        document.getElementById("offset1Value"),
+        document.getElementById("offset1Change"),
+        document.getElementById("result1"),
+        desired, minD, maxD
+      );
+
+      // Sensor 2
+      calcSensor(
+        parseFloat(document.getElementById("fluke2").value),
+        parseFloat(document.getElementById("skov2").value),
+        parseFloat(document.getElementById("offset2").value),
+        document.getElementById("chip2"),
+        document.getElementById("offset2Value"),
+        document.getElementById("offset2Change"),
+        document.getElementById("result2"),
+        desired, minD, maxD
+      );
     }
-
-    const logicSection = document.getElementById("logicSection");
-    const logicText    = document.getElementById("logicText");
-
-    logicText.textContent = lastLogic;
-    logicSection.style.display = "block";
-    logicSection.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-
-  function clearForm() {
-    document.getElementById("desired").value    = 55;
-    document.getElementById("targetDiff").value = 15;
-    document.getElementById("setpoint").value   = 70;
-
-    ["fluke1","skov1","fluke2","skov2"].forEach(id => {
-      document.getElementById(id).value = "";
-    });
-
-    document.getElementById("offset1").value = "0";
-    document.getElementById("offset2").value = "0";
-
-    document.getElementById("result1").style.display = "none";
-    document.getElementById("result2").style.display = "none";
-    document.getElementById("offset1Warning").textContent = "";
-    document.getElementById("offset2Warning").textContent = "";
-    document.getElementById("globalError").textContent = "";
-
-    const houseSummaryBox  = document.getElementById("houseSummary");
-    const houseSummaryText = document.getElementById("houseSummaryText");
-    houseSummaryBox.style.display  = "none";
-    houseSummaryText.textContent   = "";
-
-    const logicSection = document.getElementById("logicSection");
-    const logicText    = document.getElementById("logicText");
-    logicSection.style.display = "none";
-    logicText.textContent      = "";
-    lastLogic = "";
-  }
-</script>
-
+  </script>
 </body>
 </html>
